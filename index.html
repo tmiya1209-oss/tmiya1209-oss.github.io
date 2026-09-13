@@ -174,6 +174,72 @@ method=function(){
  originalMethod();const back=app.querySelector('.back-btn');if(back&&state.entryRoute!=='cook'){back.textContent='← 楽しみ方に戻る';back.onclick=()=>{state.entryRoute=null;goto('home');};}
 };
 result=function(){originalResult();if(state.revealed&&!dish()&&state.use!=='drink'){const title=app.querySelector('.result-header h1');if(title)title.textContent=state.subject==='gift'?'あの人の食卓に、小さなおだしの楽しみを。':'いつもの食事に、おだしの楽しみを。';}const label=app.querySelector('.label-line span');if(label&&!dish())label.textContent=state.use==='drink'?'いつもの一杯へ':'いつもの食卓へ';const again=app.querySelector('.action-row .btn');if(again)again.textContent='楽しみ方から、もう一度';};
+// Food-first discovery with an optional deeper comparison for enthusiasts.
+const beforeEnjoyMethod=method,beforeEnjoyResult=result,beforeEnjoyRoute=chooseRoute;
+const TASTY_STARTS=[
+ {id:'ice',title:'甘いものが好き',sub:'バニラアイスに、まさかのおだし？',product:'POWDER_SHIITAKE',img:'food_vanilla_ice'},
+ {id:'snack',title:'おつまみが好き',sub:'いつものナッツに、小さなひと工夫。',product:'POWDER_YASAI',img:'food_nuts'},
+ {id:'rice',title:'ごはんが好き',sub:'卵かけご飯から、気軽にひとかけ。',product:'SAUCE_DASHI_SHOYU',img:'food_tkg'},
+ {id:'noodle',title:'麺が好き',sub:'ラーメンにも、おだしの出番。',product:'PACK_AGO',img:'ingredient_ago'}
+];
+const DEEP_PACKS=['PACK_RIKYU','PACK_AGO','PACK_SAWARA','PACK_KATSUO'];
+function enjoyBack(){state.entryRoute=null;state.exploreOpen=null;goto('home');}
+function enjoyRoute(route){state.exploreOpen=null;state.comparePacks=[];beforeEnjoyRoute(route);}
+function showEnjoyProduct(id){
+ const p=product(id);if(!p)return;
+ resetDownstream();state.dish=null;state.dishStatus='other';
+ state.entryRoute=p.shape==='drip'?'drink':p.shape==='pack'?'cook':'quick';
+ state.use=p.shape==='drip'?'drink':p.shape==='pack'?'cook':'quick';
+ state.prep=p.shape==='drip'?'drink_drip':p.shape==='pack'?'cook_pack':p.shape==='powder'?'quick_powder':p.shape==='sauce'?'quick_sauce':id;
+ state.suggested=id;state.revealed=true;goto('result');
+}
+function enjoySubjects(){return h('div',{class:'subjects'},Object.entries(WHO).map(([id,text])=>h('button',{type:'button',class:'subject','data-subject':id,'aria-pressed':state.subject===id,text,onclick:()=>{state.subject=id;resetDownstream();state.exploreOpen=null;paint(false);}})));}
+function enjoyCard(title,desc,img,fn,attrs={}){return h('button',{type:'button',class:'method',onclick:fn,...attrs},[pic(img,'',title),h('div',{},[h('strong',{text:title}),para(desc)]),h('span',{class:'arrow','aria-hidden':'true',text:'→'})]);}
+home=function(){
+ if(state.entryRoute==='cook'){app.appendChild(btn('← 楽しみ方から選び直す',enjoyBack));cookingHome();return;}
+ app.appendChild(heading('「おいしそう」から、はじめよう。','出汁にくわしくなくても、料理をしなくても。好きなものから、新しいおいしさをのぞいてみませんか。','おだしで、ちょっとしあわせ。'));
+ app.appendChild(enjoySubjects());
+ app.appendChild(para(state.subject==='gift'?'あの人が喜びそうな楽しみ方を。わからなければ「意外な組み合わせ」から。':'今の気分で選んでください。どの入口からでも、ほかの楽しみ方へ移れます。','lead'));
+ const routes=[
+  ['food','好きな食べ物から、のぞいてみる','甘いもの、ごはん、おつまみ。食べるのが好きなら、ここから。','food_vanilla_ice'],
+  ['surprise','えっ、そんな組み合わせ？','買うものが決まっていなくても。気になるカードをめくるだけ。','food_nuts'],
+  ['cook','いつもの料理を、もっと楽しむ','よく作る料理から、おだしの使い方を探す。','pack_family'],
+  ['drink','ほっとする一杯を、見つける','飲むおだしも、だしパックも。自分に合う準備の仕方から。','cup'],
+  ['deep','素材や味の違いを、じっくり比べる','離宮・あご・京さわら・かつお。知る楽しみも、選ぶ楽しみも。','ingredient_sawara'],
+  ['quick','手軽な味付けを、探してみる','おだしソルト・スパイス・粉末・だし醤油を見比べる。','SEASON_SALT']
+ ];
+ app.appendChild(h('div',{class:'methods'},routes.map(([id,title,desc,img])=>enjoyCard(title,desc,img,()=>enjoyRoute(id),{'data-start':id}))));
+ app.appendChild(h('section',{class:'content'},[para('迷ったら、ひとつだけ。','eyebrow'),h('h2',{text:'アイスにおだし。気になる？'}),para('答えを知っている人も、初めて聞いた人も。写真から、次の楽しみを見つけてみてください。'),btn('バニラアイスのカードをめくる',()=>{state.exploreOpen='POWDER_SHIITAKE';beforeEnjoyRoute('surprise');},true,{'data-first-discovery':'true'})]));
+};
+function discoveryDetail(id){
+ const d=DISCOVERIES[id];if(!d)return null;
+ return h('article',{class:'content','aria-live':'polite'},[para('おいしそう、と思ったら。','eyebrow'),h('h2',{text:d.title}),pic(d.img,'enjoy-detail-img',d.caption),para(d.text,'lead'),para('使うのは「'+NAME[id]+'」。','small'),feedback(d.id),h('div',{class:'action-row'},[btn('この商品の使い方を見てみる',()=>showEnjoyProduct(id),true,{'data-discovery-product':id}),btn('ほかのカードも見る',()=>{state.exploreOpen=null;paint(true);})]),para(d.source,'tiny')]);
+}
+function enjoyDiscoveries(food){
+ app.appendChild(btn('← 楽しみ方に戻る',enjoyBack));
+ app.appendChild(heading(food?(state.subject==='gift'?'あの人は、何を食べるのが好き？':'どれを食べたい気分？'):'知っていても、知らなくても。次はどれを試したい？',food?'自分で作らなくても大丈夫。気になる食べ物を、ひとつ。':'カードをめくると、食べ方や使い方が見つかります。','おいしさの寄り道'));
+ const cards=food?TASTY_STARTS:[
+  {id:'ice',title:'バニラアイスに？',sub:'甘いデザートと、しいたけのおだし。',product:'POWDER_SHIITAKE',img:'food_vanilla_ice'},
+  {id:'snack',title:'ナッツにも？',sub:'野菜のおだしで、おつまみにひと工夫。',product:'POWDER_YASAI',img:'food_nuts'},
+  {id:'carpaccio',title:'カルパッチョにも？',sub:'昆布のおだしを、ひと皿に。',product:'POWDER_KOMBU',img:'food_carpaccio'},
+  {id:'cup',title:'おだしもドリップ？',sub:'カップで一杯ずつ楽しむ方法。',product:'DRIP_ODASHI',img:'cup'}
+ ];
+ app.appendChild(h('div',{class:'methods'},cards.map(c=>enjoyCard(c.title,c.sub,c.img,()=>{state.exploreOpen=c.product;const d=DISCOVERIES[c.product];if(!state.openedCards.includes(d.id))state.openedCards.push(d.id);paint(true);},{'data-discovery':c.product,'aria-expanded':state.exploreOpen===c.product}))));
+ if(state.exploreOpen)app.appendChild(discoveryDetail(state.exploreOpen));
+ app.appendChild(h('div',{class:'action-row'},[btn(food?'ほかの意外な食べ方も見る':'好きな食べ物から選ぶ',()=>enjoyRoute(food?'surprise':'food')),btn('ソルト・スパイスも見てみる',()=>enjoyRoute('quick')),btn('素材の違いを比べる',()=>enjoyRoute('deep'))]));
+}
+function enjoyDeep(){
+ app.appendChild(btn('← 楽しみ方に戻る',enjoyBack));app.appendChild(heading('同じ「おだし」でも、楽しみはそれぞれ。','気になる２つを選んで、特徴と使い道を横に並べてみましょう。','もう少し、じっくり。'));
+ const selected=state.comparePacks||[];
+ app.appendChild(h('div',{class:'methods'},DEEP_PACKS.map(id=>enjoyCard(NAME[id],META[id].desc,META[id].ingredient,()=>{state.comparePacks=selected.includes(id)?selected.filter(x=>x!==id):selected.length<2?[...selected,id]:[selected[1],id];paint(false);},{'data-compare':id,'aria-pressed':selected.includes(id)}))));
+ app.appendChild(para(selected.length===2?'選んだ２つを比べています。別の商品を押すと、先に選んだ商品と入れ替わります。':selected.length===1?'あとひとつ選ぶと、並べて比べられます。':'まだ迷う方は、気になる名前を２つ。','small'));
+ if(selected.length===2){app.appendChild(h('section',{class:'content','aria-live':'polite'},[h('h2',{text:'この２つ、どう楽しむ？'}),table(['比べるところ',...selected.map(id=>NAME[id])],[['味わいの紹介',...selected.map(id=>META[id].desc)],['使い道の例',...selected.map(id=>META[id].dishes.join('・'))],['最初の一品',...selected.map(id=>META[id].dish)]]),para('商品の紹介に基づく比較です。感じ方の違いも楽しみながら、好みを探してみてください。','small'),h('div',{class:'action-row'},selected.map(id=>btn(NAME[id]+'の使い方を見る',()=>showEnjoyProduct(id),false,{'data-compare-product':id})))]));}
+ app.appendChild(h('section',{class:'content'},[h('h2',{text:'味わうときは、この３つに注目。'}),para('① 口にする前の香り　② 口に含んだときの味わい　③ 飲み込んだあとの余韻'),para('「好き」「落ち着く」「この料理に使ってみたい」。専門的な言葉でなくても、自分の言葉で見つけるのが楽しみです。'),btn('意外な使い方も、のぞいてみる',()=>enjoyRoute('surprise'))]));
+}
+method=function(){if(state.entryRoute==='food'||state.entryRoute==='surprise'){enjoyDiscoveries(state.entryRoute==='food');return;}if(state.entryRoute==='deep'){enjoyDeep();return;}beforeEnjoyMethod();};
+result=function(){beforeEnjoyResult();if(!state.revealed)return;app.appendChild(h('section',{class:'content'},[para('ここから先は、気になるほうへ。','eyebrow'),h('h2',{text:'もうひとつ、楽しみを見つける？'}),h('div',{class:'action-row'},[btn('意外な食べ方をめくる',()=>enjoyRoute('surprise')),btn('素材や味の違いを比べる',()=>enjoyRoute('deep')),btn('ソルト・スパイスも見る',()=>enjoyRoute('quick'))])]));};
+const enjoyStyle=h('style',{text:'.enjoy-detail-img{display:block;width:min(100%,440px);height:auto;border-radius:18px;margin:20px 0}.method[aria-pressed="true"]{outline:3px solid var(--rust);outline-offset:2px;background:var(--sage)}.method[aria-expanded="true"]{outline:3px solid var(--gold)}.table-wrap{max-width:100%;overflow-x:auto}.method:focus-visible{outline:3px solid var(--rust);outline-offset:3px}'});document.head.appendChild(enjoyStyle);
+
 document.getElementById('logo').src=IMAGES.logo;document.getElementById('homeButton').addEventListener('click',reset);document.getElementById('statsButton').addEventListener('click',()=>{if(state.step!=='stats')returnStep=state.step;goto('stats');});init();paint(true);
 })();
 </script></body></html>
