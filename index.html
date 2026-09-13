@@ -321,6 +321,54 @@ enjoyDeep=function(){app.appendChild(btn('← 楽しみ方に戻る',enjoyBack))
  app.appendChild(h('section',{class:'content'},[h('h2',{text:'味わうときの、小さな実験。'}),para('① 口にする前の香り　② 口に含んだときの味わい　③ 飲んだあとの余韻。'),para('比べるなら、器・温度・濃さの条件をそろえて。「好き」「落ち着く」「この料理に使いたい」など、自分の言葉で楽しんでください。'),h('details',{class:'info'},[h('summary',{text:'自分でブレンドしてみたい人へ'}),h('div',{},[para('昆布粉末の商品ページでは、ほかの粉末とのブレンドや、取ったおだしに昆布の風味を足す使い方を紹介しています。'),para('まずは取り分けた少量で違いを比べてみましょう。配合比率や抽出時間を変えた味の評価は、確認できたものから追加していきます。'),sourceLink(DEPTH_INFO.POWDER_KOMBU)])])]));
 };
 
+
+const fourOriginalMethod=method;
+function fourStart(id){
+ state.subject=id==='gift'?'gift':'self';
+ state.comparePacks=[];state.exploreOpen=null;
+ enjoyRoute('four_'+id);
+}
+home=function(){
+ if(state.entryRoute==='cook'){
+  app.appendChild(btn('← 楽しみ方から選び直す',enjoyBack));
+  cookingHome();return;
+ }
+ app.appendChild(heading('毎日の食事、どんなふうに楽しみたい？','気になるものを、ひとつ選んでみてください。','おだしで、ちょっとしあわせ。'));
+ const options=[
+  ['easy','手軽に、おいしく楽しみたい','ひと振り・ひとかけや、ほっとする一杯から。','cup'],
+  ['explore','料理や、おだしをもっと楽しみたい','いつもの料理から、素材や味の違いまで。','pack_family'],
+  ['gift','大切な人に贈りたい','相手の好みや暮らしに合うものを。','gift'],
+  ['browse','まずは、いろいろ見てみたい','まだ決まっていなくても。意外な使い方や新しい発見を。','powders']
+ ];
+ app.appendChild(h('div',{class:'methods'},options.map(([id,title,desc,img])=>enjoyCard(title,desc,img,()=>fourStart(id),{'data-start':id}))));
+};
+method=function(){
+ const route=state.entryRoute;
+ if(!['four_easy','four_explore','four_gift','four_browse'].includes(route)){fourOriginalMethod();return;}
+ app.appendChild(btn('← 最初の４項目に戻る',enjoyBack));
+ const gift=route==='four_gift';
+ const title=gift?'あの人に、どんな楽しみを贈りたい？':route==='four_easy'?'どんな手軽さが、暮らしに合いそう？':route==='four_explore'?'どこから、楽しみを深めましょう？':'気になるところから、のぞいてみませんか？';
+ app.appendChild(heading(title,gift?'わかる範囲で大丈夫。好みがわからなければ、使い方を見比べてみましょう。':'どのコースからも、ほかの楽しみ方へ進めます。'));
+ const options=route==='four_easy'?[
+  ['quick','ひと振り・ひとかけで楽しむ','ソルト・スパイス・粉末・だし醤油を、使い方と好みから。','SEASON_SALT'],
+  ['drink','ほっとする一杯を楽しむ','飲むおだしと、だしパック。準備の仕方から選びます。','cup']
+ ]:route==='four_explore'?[
+  ['cook','いつもの料理から選ぶ','よく作る料理と、好みの味わいから。','pack_family'],
+  ['deep','素材や味の違いを比べる','気になる２つを並べて、配合や使い道まで。','ingredient_sawara']
+ ]:gift?[
+  ['quick','手軽に食事を楽しんでほしい','ひと振り・ひとかけで使える商品から。','SEASON_SALT'],
+  ['drink','ほっとする一杯を贈りたい','相手が取り入れやすい準備の仕方から。','cup'],
+  ['cook','料理好きな人に贈りたい','相手が作る料理や、好きな味わいから。','pack_family'],
+  ['deep','好みがわからないので、見比べたい','素材や使い方を知って、贈る候補を探します。','gift']
+ ]:[
+  ['surprise','意外な使い方を見てみる','バニラアイスやナッツなど、おだしの新しい出番。','food_vanilla_ice'],
+  ['deep','商品の違いを知りたい','だしパック・ソルト・スパイス・粉末を比較。','pack_family'],
+  ['food','好きな食べ物から見てみる','甘いもの、ごはん、麺などから、使い方を発見。','food_tkg'],
+  ['snack','そのまま食べる楽しみも知りたい','食べるおだしチップスや、ひと工夫する食べ方。','CHIPS_KATSUO']
+ ];
+ app.appendChild(h('div',{class:'methods'},options.map(([id,t,d,img])=>enjoyCard(t,d,img,()=>enjoyRoute(id),{'data-four-next':id}))));
+};
+
 document.getElementById('logo').src=IMAGES.logo;document.getElementById('homeButton').addEventListener('click',reset);document.getElementById('statsButton').addEventListener('click',()=>{if(state.step!=='stats')returnStep=state.step;goto('stats');});init();paint(true);
 })();
 </script></body></html>
