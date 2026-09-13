@@ -240,6 +240,87 @@ method=function(){if(state.entryRoute==='food'||state.entryRoute==='surprise'){e
 result=function(){beforeEnjoyResult();if(!state.revealed)return;app.appendChild(h('section',{class:'content'},[para('ここから先は、気になるほうへ。','eyebrow'),h('h2',{text:'もうひとつ、楽しみを見つける？'}),h('div',{class:'action-row'},[btn('意外な食べ方をめくる',()=>enjoyRoute('surprise')),btn('素材や味の違いを比べる',()=>enjoyRoute('deep')),btn('ソルト・スパイスも見る',()=>enjoyRoute('quick'))])]));};
 const enjoyStyle=h('style',{text:'.enjoy-detail-img{display:block;width:min(100%,440px);height:auto;border-radius:18px;margin:20px 0}.method[aria-pressed="true"]{outline:3px solid var(--rust);outline-offset:2px;background:var(--sage)}.method[aria-expanded="true"]{outline:3px solid var(--gold)}.table-wrap{max-width:100%;overflow-x:auto}.method:focus-visible{outline:3px solid var(--rust);outline-offset:3px}'});document.head.appendChild(enjoyStyle);
 
+// Source-backed product knowledge and preference-aware journeys.
+Object.assign(IMAGES,{
+ SEASON_SALT:'https://img21.shop-pro.jp/PA01494/425/product/181301611.jpg?cmsp_timestamp=20251223145356',
+ SEASON_SPICE:'https://img21.shop-pro.jp/PA01494/425/product/172216144.jpg?cmsp_timestamp=20251223145159',
+ SEASON_VEG:'https://img21.shop-pro.jp/PA01494/425/product/172216196.jpg?cmsp_timestamp=20251223153315',
+ CHIPS_KATSUO:'https://img21.shop-pro.jp/PA01494/425/product/191494547.jpg?cmsp_timestamp=20260627165015'
+});
+const DEPTH_INFO={
+ PACK_RIKYU:{name:'離宮のおだし〈旨味だし〉',flavor:'食材の味を引き立てる',facts:['さば・うるめいわし・いわし・道南昆布を配合。','主張を抑え、食材のうま味や風味を引き出す味わい。'],story:'毎日の料理に使える基本のおだしとして作られたブレンド。主張が強いことだけが、おだしの魅力ではありません。',uses:['味噌汁','煮物','おでん'],try:'いつもの味噌汁で、具材の香りと出汁の存在感をそれぞれ味わってみる。',contrast:'かつおは香りを楽しむ方向。旨味だしは食材を引き立てる方向です。',other:'PACK_KATSUO',source:'171941082'},
+ PACK_AGO:{name:'あごだし',flavor:'すっきりした甘味とコク',facts:['熊本県産とびうおの節を50％配合。','さば・うるめいわし・いわし・道南昆布を合わせた５素材のブレンド。'],story:'あごの味だけを単独で使うのではなく、ほかの素材も合わせた出汁。商品ページでは、あっさりしたうま味とコク、麺との相性を紹介しています。',uses:['うどん','ラーメン','そば'],try:'うどんのつゆに使い、麺を食べる前につゆだけでも味わってみる。',contrast:'本枯節の香りを楽しみたいならかつお、すっきりした甘味とコクに興味があればあご。',other:'PACK_KATSUO',source:'171942233'},
+ PACK_SAWARA:{name:'京さわらのおだし',flavor:'上品で、うま味をしっかり楽しむ',facts:['京都のさわらの煮干しに、うるめいわし・かたくちいわし・昆布・乾しいたけを配合。','小型のさわら「サゴシ」を有効活用。水揚げから煮干し・だしパック製造まで京都府内。'],story:'「さわらを出汁にする」という発想には、小型の魚も活かしたいという背景があります。味わいと、生まれた場所の両方を楽しめるおだしです。',uses:['すまし汁','味噌汁','鍋'],try:'すまし汁など、出汁を味わいやすい一品で楽しんでみる。',contrast:'京さわらは京都の魚を活かしたブレンド。かつおは枕崎産の本枯節の香りが特徴です。',other:'PACK_KATSUO',source:'171941433'},
+ PACK_KATSUO:{name:'かつお〈本枯節〉だし',flavor:'香り豊かな、澄んだ味わい',facts:['鹿児島県枕崎産の本枯節を50％配合。','いわしの節と道南昆布をブレンド。香りとしっかりしたうま味が特徴。'],story:'手間をかけて作られた本枯節を使う理由は、香りも楽しんでほしいから。口に含む前の香りにも、少し意識を向けてみてください。',uses:['お吸い物','味噌汁','鍋'],try:'お吸い物で、口にする前の香りと飲んだ後の余韻を楽しむ。',contrast:'旨味だしは食材を引き立てるブレンド。かつおは出汁の香りを楽しみたいときの候補です。',other:'PACK_RIKYU',source:'171941742'},
+ SEASON_SALT:{name:'離宮のおだしソルト',flavor:'塩味に、おだしのうま味',facts:['原材料は塩・昆布粉末・かつお粉末・さば粉末。','おにぎり、魚の塩焼き、枝豆への使い方を紹介。'],story:'普段「塩を使うところ」から、おだしに出会える調味料。出汁を煮出す準備がなくても、食卓の味付けに取り入れられます。',uses:['おにぎり','魚の塩焼き','枝豆'],try:'おにぎりの一部に少量を使い、いつもの塩味との違いを味わう。',contrast:'にんにくの風味も欲しいならおだしスパイス。塩と出汁の組み合わせを楽しむならソルト。',other:'SEASON_SPICE',source:'181301611'},
+ SEASON_SPICE:{name:'離宮のおだしスパイス',flavor:'にんにくのパンチと魚介のうま味',facts:['鰹だし・ガーリック・岩塩が味の軸。','黒胡椒も入り、魚介のうま味とにんにくの風味を楽しむスパイス。'],story:'おだしを「和食のやさしい味」だけで終わらせない一本。商品ページでは、海鮮焼きそば・ポテトフライ・チャーハンへの使い方を紹介しています。',uses:['海鮮焼きそば','ポテトフライ','チャーハン'],try:'ポテトフライの一部に振りかけ、にんにくの香りと出汁の味わいを楽しむ。',contrast:'野菜スパイスは黒胡椒の香りと刺激が特徴。どちらもにんにくを含みます。',other:'SEASON_VEG',source:'172216144'},
+ SEASON_VEG:{name:'魔法の野菜スパイス',flavor:'黒胡椒の香りと、力強い味わい',facts:['野菜だし・ブラックペッパー・岩塩が味の軸。','原材料には、にんにく・かつお削りぶし・イカ墨も含みます。'],story:'名前は「野菜」でも、味わいは香りと刺激を楽しむ方向。植物性の原料だけで作られた商品ではありません。',uses:['肉料理','パスタ'],try:'肉料理やパスタの味付けに使い、黒胡椒の風味に注目してみる。',contrast:'おだしスパイスは鰹だしとにんにくが軸。野菜スパイスは野菜だしと黒胡椒が軸です。',other:'SEASON_SPICE',source:'172216196'},
+ POWDER_YASAI:{name:'整うおだし〈やさい〉',flavor:'コンソメ風味を手軽に',facts:['野菜の風味を楽しむ粉末のおだし。','調味料としても使え、温かい牛乳に混ぜるポタージュを紹介。'],story:'煮出す出汁パックとは違い、粉末を混ぜて使う形です。野菜スパイスとは別の商品で、原材料欄には食塩・にんにくなども記載されています。',uses:['ポタージュ','料理の味付け'],try:'温かい牛乳に混ぜて、ポタージュとして楽しむ。量は商品表示に合わせて調整。',contrast:'野菜スパイスは黒胡椒の香りと刺激を楽しむ調味料。整うおだし〈やさい〉はコンソメ風味を取り入れる粉末です。',other:'SEASON_VEG',source:'177911123'},
+ POWDER_KOMBU:{name:'整うおだし〈昆布〉',flavor:'昆布の風味を足して楽しむ',facts:['原材料は昆布粉末。','ほかの粉末と組み合わせて、自分のおだしを作る使い方も紹介。'],story:'すでに取ったおだしに昆布の風味を足すなど、自分で組み合わせを楽しめます。最適な配合は好みや料理によって変わります。',uses:['おだしへの風味付け','粉末のブレンド'],try:'いつものおだしを少量取り分け、一方に昆布粉末を少し加えて違いを比べる。',contrast:'調味料として味付けを変えるソルト・スパイスとは、使う目的が異なります。',other:'SEASON_SALT',source:'172214959'},
+ DRIP_ODASHI:{name:'飲むおだし',flavor:'カップで楽しむ、おだしの一杯',facts:['鰹節・さば節・いわし削り節・昆布を使用。','カップにドリッパーをセットして、お湯を注ぐ方法。'],story:'料理をする習慣がなくても、お茶をいれるような準備から始められます。おだしを「飲む時間」として楽しむ入口です。',uses:['朝の一杯','ひと息つく時間'],try:'カップにセットし、商品表示に従ってお湯を注ぐ。まずは一杯の香りを楽しむ。',contrast:'だしパックは鍋などで出汁を取る形。ドリップ式とは準備が異なります。',other:'PACK_RIKYU',source:'182664858'},
+ CHIPS_KATSUO:{name:'だし薫るおだしチップス〈かつお〉',flavor:'そのまま食べる、おだしのおつまみ',facts:['国産かつおを使った、食べる削り節。','そのままおやつ・おつまみに。サラダやパスタのトッピングにも。'],story:'おだしを取る必要も、お湯を用意する必要もありません。「食べてみる」から、かつおのおいしさに出会えます。',uses:['そのままおつまみ','サラダ','パスタ'],try:'まずはそのままひと口。次はサラダのトッピングで、食べ方を変えてみる。',contrast:'調理の味付けに使うスパイスと違い、そのまま食べるためにも作られた商品です。',other:'SEASON_SPICE',source:'191494547'}
+};
+for(const [id,k] of Object.entries(DEPTH_INFO)){
+ NAME[id]=k.name;
+ const existing=CATALOG.find(p=>p.id===id);if(existing)existing.name=k.name;else CATALOG.push({id,name:k.name,shape:'snack'});
+ META[id]={...META[id],tag:k.flavor,desc:k.facts.join(' '),dishes:k.uses,dish:k.uses[0]+'から。',dishText:k.try,source:'公式オンラインショップの商品説明'};
+ if(id.startsWith('SEASON_'))DISCOVERIES[id]={id:'discovery_'+id,img:id,caption:k.name,title:k.uses.join('・')+'にも。',tease:'いつもの食事に、\nもうひとつの出番。',text:k.try,source:'公式オンラインショップの商品説明'};
+}
+PREPS.snack=[{id:'snack_ready',shape:'snack',title:'そのまま食べて楽しみたい'}];
+DISCOVERIES.CHIPS_KATSUO={id:'chips_katsuo',img:'CHIPS_KATSUO',caption:NAME.CHIPS_KATSUO,title:'サラダに、食べるおだし。',tease:'そのままでも、\nトッピングでも。',text:DEPTH_INFO.CHIPS_KATSUO.try,source:'公式オンラインショップの商品説明'};
+const DEPTH_PREFS={
+ pack:[['PACK_RIKYU','食材の味を引き立てたい','主張を抑えた、毎日のブレンド。'],['PACK_AGO','すっきりした甘味とコクが好き','麺料理にも使ってみたい。'],['PACK_SAWARA','出汁のうま味をじっくり楽しみたい','京都のさわらを活かした味わい。'],['PACK_KATSUO','香りを楽しみたい','本枯節の香りと澄んだ出汁。']],
+ seasoning:[['SEASON_SALT','塩味に、出汁のうま味を足したい','おにぎり・枝豆・魚の塩焼きなどに。'],['SEASON_SPICE','にんにくのパンチが欲しい','鰹だしとガーリックの風味。'],['SEASON_VEG','胡椒の香りを楽しみたい','野菜だしとブラックペッパーの味わい。']],
+ powder:[['POWDER_RIKYU','料理の風味を手軽に整えたい','離宮のおだしを粉末で。'],['POWDER_KATSUO','かつおの風味が好き','かつおの粉末を使う楽しみ。'],['POWDER_KOMBU','昆布の風味を加えてみたい','料理や、取ったおだしに。'],['POWDER_SHIITAKE','しいたけの風味が好き','バニラアイスとの組み合わせも。'],['POWDER_YASAI','コンソメ風味を取り入れたい','牛乳に混ぜるポタージュも。']]
+};
+const depthOriginalInit=init,depthOriginalResetDownstream=resetDownstream,depthOriginalChoosePrep=choosePrep,depthOriginalCandidates=candidates,depthOriginalMethod=method,depthOriginalShow=showEnjoyProduct,depthOriginalRoute=enjoyRoute;
+init=function(){depthOriginalInit();state.depthQuestion=false;state.depthPreference=null;state.depthReason='';state.depthContext=null;state.depthRemember=[];state.depthFlavorAnswered=false;};
+resetDownstream=function(){depthOriginalResetDownstream();state.depthQuestion=false;state.depthPreference=null;state.depthReason='';state.depthContext=null;state.depthFlavorAnswered=false;};
+enjoyRoute=function(route){depthOriginalRoute(route);};
+candidates=function(){const list=depthOriginalCandidates();if(!state.depthPreference)return list;return [...list.filter(p=>p.id===state.depthPreference),...list.filter(p=>p.id!==state.depthPreference)];};
+choosePrep=function(id){depthOriginalChoosePrep(id);const p=prep();if(!p)return;state.depthPreference=null;state.depthFlavorAnswered=false;state.depthReason='';if(DEPTH_PREFS[p.shape]){state.depthQuestion=true;goto('method');}};
+function depthChoosePreference(id){const options=DEPTH_PREFS[prep()?.shape]||[];const choice=options.find(x=>x[0]===id);if(!choice)return;state.depthPreference=id;state.depthFlavorAnswered=true;state.depthReason='「'+choice[1]+'」という好みに合わせた候補です。';state.depthQuestion=false;state.suggested=id;state.revealed=true;state.selected=null;goto('result');}
+showEnjoyProduct=function(id){if(id==='CHIPS_KATSUO'){resetDownstream();state.dish=null;state.dishStatus='other';state.use='snack';state.entryRoute='snack';state.prep='snack_ready';state.suggested=id;state.revealed=true;goto('result');return;}depthOriginalShow(id);};
+function sourceLink(k){return h('a',{href:'https://kyotorikyu.shop-pro.jp/?pid='+k.source,target:'_blank',rel:'noopener noreferrer',text:'商品の詳しい情報・最新の表示を見る ↗'});}
+function depthPreferenceScreen(){const shape=prep()?.shape;app.appendChild(btn('← 使い方を選び直す',()=>{state.depthQuestion=false;state.prep=null;goto('method');}));app.appendChild(progress(1));if(dish())app.appendChild(para('よく作る料理：'+dish().name,'dish-token'));app.appendChild(heading(state.subject==='gift'?'あの人が好きそうなのは、どの味わい？':'どんな味わいを楽しみたい？','専門的な言葉でなくて大丈夫。気になるものをひとつ。'));
+ app.appendChild(h('div',{class:'methods'},(DEPTH_PREFS[shape]||[]).map(([id,title,desc])=>enjoyCard(title,desc,id,()=>depthChoosePreference(id),{'data-depth-pref':id}))));
+ app.appendChild(btn('まだわからないので、見比べたい',()=>{state.depthQuestion=false;state.depthPreference=null;state.depthReason='好みはまだ決めず、使いたい形に合う候補を見比べています。';state.suggested=candidates()[0]?.id;state.revealed=true;goto('result');},false,{'data-depth-unsure':'true'}));
+}
+function depthQuick(){app.appendChild(btn('← 楽しみ方に戻る',enjoyBack));app.appendChild(heading('いつもの食事、どう楽しみたい？','商品名を知らなくても、使い方から選べます。'));
+ for(const [id,title,desc,img,use,prepId] of [['season','味付けを変えてみたい','塩味・にんにく・胡椒。好きな方向から選ぶ。','SEASON_SPICE','cook','cook_seasoning'],['powder','粉末を混ぜる・振るだけがいい','かつお・昆布・しいたけ・野菜などの風味を選ぶ。','powders','quick','quick_powder'],['sauce','ひとかけで楽しみたい','卵かけご飯などに、だし醤油を。','food_tkg','quick','quick_sauce']])app.appendChild(enjoyCard(title,desc,img,()=>{resetDownstream();state.use=use;state.entryRoute='quick';state.dish=null;choosePrep(prepId);},{'data-depth-quick':id}));
+}
+function depthSnack(){app.appendChild(btn('← 楽しみ方に戻る',enjoyBack));app.appendChild(heading('食べたい気分に、ひとつの発見。','料理をしなくても大丈夫。まずは食べ方から。'));
+ for(const [id,title,desc,img] of [['CHIPS_KATSUO','準備せず、そのままつまみたい','食べるおだしチップスを、おやつやおつまみに。','CHIPS_KATSUO'],['POWDER_SHIITAKE','甘いものに、ひと工夫したい','バニラアイスと、しいたけのおだし。','food_vanilla_ice'],['POWDER_YASAI','ナッツを少し違う味にしたい','野菜のおだしと組み合わせる楽しみ。','food_nuts']])app.appendChild(enjoyCard(title,desc,img,()=>{showEnjoyProduct(id);state.depthContext=id==='CHIPS_KATSUO'?'そのまま食べたい':id==='POWDER_SHIITAKE'?'甘いものを楽しみたい':'ナッツをアレンジしたい';paint(true);},{'data-depth-snack':id}));
+}
+method=function(){if(state.depthQuestion){depthPreferenceScreen();return;}if(state.entryRoute==='quick'){depthQuick();return;}if(state.entryRoute==='snack'){depthSnack();return;}depthOriginalMethod();};
+const depthOriginalHome=home;
+home=function(){depthOriginalHome();if(state.entryRoute==='cook')return;const extra=h('section',{class:'content'},[para('出汁に興味がなくても、ここから。','eyebrow'),h('h2',{text:'まずは、おやつにしませんか？'}),para('そのまま食べるおだしも、アイスやナッツに合わせるおだしも。'),btn('今の気分で、おやつを選ぶ',()=>enjoyRoute('snack'),true,{'data-depth-start':'snack'})]);app.insertBefore(extra,app.querySelector('.methods'));};
+function depthKeep(id){state.depthRemember=state.depthRemember||[];state.depthRemember=state.depthRemember.includes(id)?state.depthRemember.filter(x=>x!==id):[...state.depthRemember,id];paint(false);}
+function depthResultKnowledge(id){const k=DEPTH_INFO[id];if(!k)return h('section',{class:'content'},[h('h2',{text:'まずは、こんな楽しみ方から。'}),para(META[id].dishText),para(META[id].source,'tiny')]);return h('section',{class:'content'},[para('知るほど、選ぶのが楽しくなる。','eyebrow'),h('h2',{text:'この商品の、もう一歩奥へ。'}),h('details',{class:'info',id:'depthMaterials'},[h('summary',{text:'何が入っている？ 素材を知る'}),h('div',{},k.facts.map(x=>para(x)))]),h('details',{class:'info',id:'depthStory'},[h('summary',{text:'なぜ、この味わい？ 背景を知る'}),h('div',{},[para(k.story),sourceLink(k)])]),h('details',{class:'info',id:'depthDifference'},[h('summary',{text:'似た商品と、何が違う？'}),h('div',{},[para(k.contrast),btn(NAME[k.other]+'も見てみる',()=>showEnjoyProduct(k.other),false,{'data-depth-other':k.other})])]),h('article',{class:'ordinary',style:'margin-top:24px'},[h('h3',{text:'家で、ひとつ試してみる。'}),para(k.try),para('使い道の例：'+k.uses.join('・'),'small'),btn((state.depthRemember||[]).includes(id)?'✓ 気になる使い方に追加済み':'この使い方を覚えておく',()=>depthKeep(id),false,{'data-depth-keep':id,'aria-pressed':(state.depthRemember||[]).includes(id)}),para('この画面を開いている間のメモです。ページを閉じると消えます。','tiny')]),sourceLink(k)]);}
+result=function(){const p=product(state.suggested),pr=prep();if(!p||!pr){goto('method');return;}
+ app.appendChild(btn('← 選び方に戻る',()=>{if(state.depthFlavorAnswered){state.depthQuestion=true;}goto('method');}));
+ if(!state.revealed){app.appendChild(heading('あなたの楽しみ方に、こんなおだし。','使いたい形を手がかりに、候補と使い方を見てみましょう。'));app.appendChild(btn('候補と使い方を見る',reveal,true,{'data-open-result':'true'}));return;}
+ rememberShown(p.id);const k=DEPTH_INFO[p.id],d=dish();
+ app.appendChild(heading(state.subject==='gift'?'あの人に贈りたい、こんな楽しみ。':'あなたの「好き」から、見つけた楽しみ。',state.depthContext||pr.title,'おだしあわせ'));
+ const requested=state.depthPreference===p.id&&state.depthReason?state.depthReason:state.depthPreference?'同じ使い方の中で、別の味わいを見ています。':state.depthReason||'気になった食べ方・使い方を入口にした候補です。';
+ app.appendChild(h('section',{class:'result-wrap'},[h('div',{class:'result-hero'},[h('div',{class:'product-frame'},[pic(p.id,'',p.name)]),h('div',{class:'result-copy'},[para(k?.flavor||META[p.id].tag,'tagline'),h('h2',{class:'product-name',text:p.name}),para(k?.facts.join(' ')||META[p.id].desc,'desc'),h('p',{class:'reason',text:requested}),d?para('入口で選んだ料理：'+d.name+'。候補は使い方と好みを手がかりにしています。この料理との配合・手順は未確定です。','small'):null,btn(state.selected===p.id?'✓ この商品を選びました':state.subject==='gift'?'贈る候補にする':'この商品を選ぶ',()=>{state.selected=p.id;dirty();paint(false);},true,{'data-select':p.id})])])]));
+ app.appendChild(depthResultKnowledge(p.id));
+ const dis=DISCOVERIES[p.id];if(dis)app.appendChild(h('details',{class:'info',id:'depthDiscovery'},[h('summary',{text:'もうひとつの使い方を、のぞいてみる'}),h('div',{},[h('h3',{text:dis.title}),pic(dis.img,'enjoy-detail-img',dis.caption),para(dis.text),para(dis.source,'tiny')])]));
+ const list=candidates().filter(x=>x.id!==p.id);if(list.length)app.appendChild(h('details',{class:'info',id:'depthAlternatives'},[h('summary',{text:'同じ使い方で、ほかの味も比べる'}),h('div',{class:'methods'},list.map(x=>enjoyCard(x.name,DEPTH_INFO[x.id]?.flavor||META[x.id].tag,x.id,()=>{state.suggested=x.id;state.selected=null;dirty();paint(true);},{'data-alternative':x.id})))]));
+ if(state.subject==='gift')app.appendChild(giftSection());
+ app.appendChild(h('section',{class:'content'},[h('h2',{text:'次は、どこまで楽しむ？'}),h('div',{class:'action-row'},[btn('素材や味わいを比べる',()=>enjoyRoute('deep')),btn('意外な食べ方を探す',()=>enjoyRoute('surprise')),btn('最初から選び直す',reset)])]));
+ if((state.depthRemember||[]).length)app.appendChild(h('section',{class:'content'},[h('h3',{text:'気になった使い方'}),...state.depthRemember.map(id=>h('p',{},[h('strong',{text:NAME[id]+'：'}),DEPTH_INFO[id].try]))]));
+ app.appendChild(h('details',{class:'info',id:'productInformation'},[h('summary',{text:'原材料・使い方を確認する'}),h('div',{},[para('原材料・アレルギー・使用量は、購入する商品の最新の表示をご確認ください。商品名だけで魚不使用・無塩・植物性のみとは判断できません。'),k?sourceLink(k):para('詳細は店頭でお尋ねください。')])]));
+ app.appendChild(profile());app.appendChild(savePanel());
+};
+enjoyDeep=function(){app.appendChild(btn('← 楽しみ方に戻る',enjoyBack));app.appendChild(heading('「おいしい」の違いを、見つけよう。','気になる２つを選ぶと、素材・味わい・使い道を並べて比べられます。','じっくり楽しむ、おだし選び'));
+ const groups=[['だしパック',DEEP_PACKS],['ソルト・スパイス',['SEASON_SALT','SEASON_SPICE','SEASON_VEG']],['粉末のおだし',['POWDER_KOMBU','POWDER_YASAI']]];
+ for(const [title,ids]of groups)app.appendChild(h('section',{class:'content'},[h('h2',{text:title}),h('div',{class:'feedback'},ids.map(id=>h('button',{type:'button',class:'chip',text:NAME[id],'data-compare':id,'aria-pressed':(state.comparePacks||[]).includes(id),onclick:()=>{const s=state.comparePacks||[];state.comparePacks=s.includes(id)?s.filter(x=>x!==id):s.length<2?[...s,id]:[s[1],id];paint(false);}})))]));
+ const s=state.comparePacks||[];app.appendChild(para(s.length===2?'ほかの商品を押すと、先に選んだ商品と入れ替わります。':s.length===1?'あとひとつ選んでください。':'どの組み合わせも選べます。たとえば「ソルトとスパイス」でも。'));
+ if(s.length===2)app.appendChild(h('section',{class:'content','aria-live':'polite'},[h('h2',{text:'選んだ２つの違い'}),table(['比べるところ',...s.map(id=>NAME[id])],[['味わい・楽しみ方',...s.map(id=>DEPTH_INFO[id].flavor)],['素材・商品特徴',...s.map(id=>DEPTH_INFO[id].facts.join(' '))],['生まれた背景・使う理由',...s.map(id=>DEPTH_INFO[id].story)],['使い道',...s.map(id=>DEPTH_INFO[id].uses.join('・'))],['家で試すなら',...s.map(id=>DEPTH_INFO[id].try)]]),para('数値の味覚評価や、優劣のランキングではありません。商品の紹介に基づく比較です。','tiny'),h('div',{class:'action-row'},s.map(id=>btn(NAME[id]+'を詳しく見る',()=>showEnjoyProduct(id),false,{'data-compare-product':id}))),...s.map(id=>h('p',{},[NAME[id]+'：',sourceLink(DEPTH_INFO[id])]))]));
+ app.appendChild(h('section',{class:'content'},[h('h2',{text:'味わうときの、小さな実験。'}),para('① 口にする前の香り　② 口に含んだときの味わい　③ 飲んだあとの余韻。'),para('比べるなら、器・温度・濃さの条件をそろえて。「好き」「落ち着く」「この料理に使いたい」など、自分の言葉で楽しんでください。'),h('details',{class:'info'},[h('summary',{text:'自分でブレンドしてみたい人へ'}),h('div',{},[para('昆布粉末の商品ページでは、ほかの粉末とのブレンドや、取ったおだしに昆布の風味を足す使い方を紹介しています。'),para('まずは取り分けた少量で違いを比べてみましょう。配合比率や抽出時間を変えた味の評価は、確認できたものから追加していきます。'),sourceLink(DEPTH_INFO.POWDER_KOMBU)])])]));
+};
+
 document.getElementById('logo').src=IMAGES.logo;document.getElementById('homeButton').addEventListener('click',reset);document.getElementById('statsButton').addEventListener('click',()=>{if(state.step!=='stats')returnStep=state.step;goto('stats');});init();paint(true);
 })();
 </script></body></html>
